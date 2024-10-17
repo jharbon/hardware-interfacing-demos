@@ -41,5 +41,5 @@ void loop() {
     Serial.print(pitch);
     Serial.println("deg");
 
-    delay(100);
+    delay(200);
 }
