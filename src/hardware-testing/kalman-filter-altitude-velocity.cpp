@@ -8,7 +8,7 @@
 
 const float TIME_STEP = 0.02;  // Seconds
 float timeElapsedSincePrint = 0.0;  // Seconds
-const float PROCESS_DRIFT_NOISE = 0.0450;  // m/s/s
+const float PROCESS_VARIANCE = 0.00761;  // m^2/s^4
 const float ALTITUDE_MEASUREMENT_VARIANCE = 0.0130;  // m^2  
 
 Accelerometer accelerometer;
@@ -53,7 +53,7 @@ void setup() {
 
     // Process noise matrix 
     MatrixXd Q(2,2);
-    Q = G * G.transpose() * pow(PROCESS_DRIFT_NOISE, 2);
+    Q = G * G.transpose() * PROCESS_VARIANCE;
 
     // Observation matrix
     MatrixXd H(1,2);
@@ -83,8 +83,8 @@ void loop() {
     P = kalmanFilter.getCovariance();
     K = kalmanFilter.getKalmanGain();
 
-    // Print some output roughly every 1s
-    if (timeElapsedSincePrint >= 1.0) {
+    // Print some output roughly every 0.25s
+    if (timeElapsedSincePrint >= 0.25) {
         Serial.print("Inertial Z Acceleration: ");
         Serial.print(u(0)*100);
         Serial.println("cm/s^2");
