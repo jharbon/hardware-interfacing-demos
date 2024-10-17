@@ -23,10 +23,8 @@ const float GRAVITATIONAL_ACC = 9.81;  // m/s^2
 void Accelerometer::init() {
     startPowerMode();
     configSignals();
-    prevTimeLogged = std::chrono::steady_clock::now();
     accX = accY = 0.0;
     accZ = 1.0;
-    velZ = 0.0;
     roll = pitch = 0.0;
 }
 
@@ -54,18 +52,11 @@ void Accelerometer::configSignals() {
 }
 
 void Accelerometer::update() {
-    // Determine how much time has elapsed since this method was last called and update our time log attribute
-    auto nowTime = std::chrono::steady_clock::now();
-    float timeElapsed = std::chrono::duration<float>(nowTime - prevTimeLogged).count();
-    prevTimeLogged = nowTime;
-
     // Select the first register we will use for pulling accelerometer measurements from the MPU6050
     Wire.beginTransmission(MPU6050_ADDRESS);
     Wire.write(ACCELEROMETER_MEASUREMENTS_FIRST_REGISTER);
     Wire.endTransmission();
 
-    // First update the Z velocity with the previously measured accelerations 
-    updateVelocity(timeElapsed);
     // Measure the accelerations and calculate the new roll and pitch angles
     updateAccs();
     updateRollPitch();
@@ -85,9 +76,10 @@ void Accelerometer::updateAccs() {
     accZ = (float)lsbZ/SENSITIVITY_SCALE_FACTOR - ACC_Z_CALIBRATION;
 }
 
-void Accelerometer::updateVelocity(float deltaT) {
-    float inertialAccZ = calculateInertialAccZ();
-    velZ += inertialAccZ*deltaT;  // Add the change in vertical velocity
+void Accelerometer::updateRollPitch() {
+    // Calculate roll and pitch angles and also convert from rads to degrees
+    roll = atan(accY / sqrt(pow(accX,2)+pow(accZ,2))) * 180/M_PI;
+    pitch = atan(-accX / sqrt(pow(accY,2)+pow(accZ,2))) * 180/M_PI;
 }
 
 float Accelerometer::calculateInertialAccZ() {
@@ -95,12 +87,6 @@ float Accelerometer::calculateInertialAccZ() {
     float inertialAccZ = accX*sin(-pitch*DEG_TO_RAD) + accY*sin(roll*DEG_TO_RAD)*cos(pitch*DEG_TO_RAD) + accZ*cos(roll*DEG_TO_RAD)*cos(pitch*DEG_TO_RAD) - 1;
     inertialAccZ *= GRAVITATIONAL_ACC;  // Convert units: g -> m/s^2
     return inertialAccZ;
-}
-
-void Accelerometer::updateRollPitch() {
-    // Calculate roll and pitch angles and also convert from rads to degrees
-    roll = atan(accY / sqrt(pow(accX,2)+pow(accZ,2))) * 180/M_PI;
-    pitch = atan(-accX / sqrt(pow(accY,2)+pow(accZ,2))) * 180/M_PI;
 }
 
 float Accelerometer::getAccX() {
@@ -113,10 +99,6 @@ float Accelerometer::getAccY() {
 
 float Accelerometer::getAccZ() {
     return accZ;
-}
-
-float Accelerometer::getVelZ() {
-    return velZ;
 }
 
 float Accelerometer::getRoll() {
